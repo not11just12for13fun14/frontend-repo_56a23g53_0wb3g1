@@ -1,70 +1,79 @@
+import { useState } from 'react'
+import Header from './components/Header'
+import IngredientInput from './components/IngredientInput'
+import Filters from './components/Filters'
+import Results from './components/Results'
+
 function App() {
+  const [ingredients, setIngredients] = useState([])
+  const [healthyOnly, setHealthyOnly] = useState(false)
+  const [difficulty, setDifficulty] = useState('')
+  const [recipes, setRecipes] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const backendBase = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+
+  const search = async () => {
+    setLoading(true)
+    setError('')
+    setRecipes([])
+    try {
+      const res = await fetch(`${backendBase}/api/recipes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ingredients,
+          healthy_only: healthyOnly,
+          difficulty: difficulty || null,
+        })
+      })
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`)
+      const data = await res.json()
+      setRecipes(data)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Subtle pattern overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.05),transparent_50%)]"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.10),transparent_40%),_radial-gradient(circle_at_80%_50%,rgba(45,212,191,0.08),transparent_35%)]"></div>
 
-      <div className="relative min-h-screen flex items-center justify-center p-8">
-        <div className="max-w-2xl w-full">
-          {/* Header with Flames icon */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center mb-6">
-              <img
-                src="/flame-icon.svg"
-                alt="Flames"
-                className="w-24 h-24 drop-shadow-[0_0_25px_rgba(59,130,246,0.5)]"
-              />
-            </div>
+      <div className="relative max-w-3xl mx-auto px-4 py-10">
+        <Header />
 
-            <h1 className="text-5xl font-bold text-white mb-4 tracking-tight">
-              Flames Blue
-            </h1>
+        <div className="bg-slate-800/40 backdrop-blur-sm border border-emerald-500/20 rounded-2xl p-5 shadow-xl">
+          <IngredientInput onChange={setIngredients} />
 
-            <p className="text-xl text-blue-200 mb-6">
-              Build applications through conversation
-            </p>
+          <div className="mt-4">
+            <Filters
+              healthyOnly={healthyOnly}
+              setHealthyOnly={setHealthyOnly}
+              difficulty={difficulty}
+              setDifficulty={setDifficulty}
+            />
           </div>
 
-          {/* Instructions */}
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-blue-500/20 rounded-2xl p-8 shadow-xl mb-6">
-            <div className="flex items-start gap-4 mb-6">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">
-                1
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Describe your idea</h3>
-                <p className="text-blue-200/80 text-sm">Use the chat panel on the left to tell the AI what you want to build</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4 mb-6">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">
-                2
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Watch it build</h3>
-                <p className="text-blue-200/80 text-sm">Your app will appear in this preview as the AI generates the code</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">
-                3
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Refine and iterate</h3>
-                <p className="text-blue-200/80 text-sm">Continue the conversation to add features and make changes</p>
-              </div>
-            </div>
+          <div className="mt-4 flex gap-3">
+            <button
+              onClick={search}
+              disabled={ingredients.length === 0}
+              className="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
+            >
+              Find recipes
+            </button>
+            <a href="/test" className="text-emerald-300/80 hover:text-emerald-200 text-sm self-center">Check backend status</a>
           </div>
 
-          {/* Footer */}
-          <div className="text-center">
-            <p className="text-sm text-blue-300/60">
-              No coding required • Just describe what you want
-            </p>
+          <div className="mt-6">
+            <Results items={recipes} loading={loading} error={error} />
           </div>
         </div>
+
+        <p className="text-center text-emerald-200/70 text-xs mt-6">Powered by a lightweight rules engine. Add more ingredients for better matches.</p>
       </div>
     </div>
   )
